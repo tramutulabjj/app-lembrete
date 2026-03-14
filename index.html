@@ -3,26 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HealthTrack Firebase</title>
+    <title>HealthTrack Cloud</title>
     <style>
-        :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; --danger: #e57373; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
-        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
-        .btn { background: var(--accent); border: none; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; margin-top: 5px; color: black; font-weight: bold; }
-        input { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: none; border-radius: 5px; }
+        h1 { color: var(--accent); text-align: center; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .supp-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+        .btn { background: var(--accent); border: none; padding: 10px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn-small { background: #444; color: white; padding: 5px 8px; border-radius: 5px; font-size: 0.75em; border: none; cursor: pointer; }
+        input { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box; }
+        .stock-warn { color: var(--danger); font-weight: bold; font-size: 0.8em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>HealthTrack Cloud</h1>
+    <h1>HealthTrack</h1>
+    
     <div class="card">
-        <input type="text" id="name" placeholder="Nome do Suplemento">
-        <input type="text" id="dose" placeholder="Dosagem">
-        <button class="btn" onclick="adicionar()">Adicionar</button>
+        <h3 id="form-title">Adicionar Item</h3>
+        <input type="hidden" id="edit-id">
+        <input type="text" id="name" placeholder="Nome (ex: Ferro)">
+        <input type="text" id="dose" placeholder="Dosagem (ex: 500mg)">
+        <input type="number" id="stock" placeholder="Estoque Atual">
+        <button class="btn" id="save-btn" onclick="salvarItem()">Salvar Item</button>
     </div>
-    <div id="supp-list">Carregando...</div>
+
+    <div id="supp-list">Carregando dados da nuvem...</div>
 </div>
 
 <script type="module">
@@ -43,6 +52,7 @@
 
     let state = { supps: [] };
 
+    // Carregar do Firebase
     async function carregarDados() {
         const docRef = doc(db, "data", "minhaLista");
         const docSnap = await getDoc(docRef);
@@ -50,27 +60,78 @@
             state.supps = docSnap.data().supps;
             render();
         } else {
-            document.getElementById('supp-list').innerHTML = "Nenhum suplemento cadastrado.";
+            state.supps = [];
+            render();
         }
     }
 
-    async function salvarDados() {
+    // Salvar no Firebase
+    async function sync() {
         await setDoc(doc(db, "data", "minhaLista"), { supps: state.supps });
         render();
     }
 
-    window.adicionar = async () => {
+    window.salvarItem = async () => {
+        const id = document.getElementById('edit-id').value;
         const name = document.getElementById('name').value;
         const dose = document.getElementById('dose').value;
-        state.supps.push({ name, dose });
-        await salvarDados();
+        const stock = parseInt(document.getElementById('stock').value);
+
+        if(!name || !dose || isNaN(stock)) return alert("Preencha todos os campos!");
+
+        if (id) {
+            const index = state.supps.findIndex(s => s.id == id);
+            state.supps[index] = { ...state.supps[index], name, dose, stock };
+        } else {
+            state.supps.push({ id: Date.now(), name, dose, stock, taken: false });
+        }
+        await sync();
+    };
+
+    window.editSupp = (id) => {
+        const s = state.supps.find(item => item.id == id);
+        document.getElementById('edit-id').value = s.id;
+        document.getElementById('name').value = s.name;
+        document.getElementById('dose').value = s.dose;
+        document.getElementById('stock').value = s.stock;
+        document.getElementById('form-title').innerText = "Editando Item";
+    };
+
+    window.deleteSupp = async (id) => {
+        state.supps = state.supps.filter(s => s.id !== id);
+        await sync();
+    };
+
+    window.toggleSupp = async (id) => {
+        const s = state.supps.find(item => item.id == id);
+        s.taken = !s.taken;
+        s.taken ? s.stock-- : s.stock++;
+        await sync();
     };
 
     function render() {
         const list = document.getElementById('supp-list');
-        list.innerHTML = state.supps.map(s => `
-            <div class="card"><strong>${s.name}</strong> - ${s.dose}</div>
-        `).join('');
+        list.innerHTML = '';
+        state.supps.forEach(s => {
+            let note = '';
+            if(s.name.toLowerCase().includes('ferro')) note = '⚠️ Não tomar com café.';
+            if(s.name.toLowerCase().includes('vitamina d')) note = '💡 Tomar após refeição.';
+            
+            list.innerHTML += `
+                <div class="card">
+                    <div class="supp-item">
+                        <input type="checkbox" style="width:25px;height:25px" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${s.id})">
+                        <div style="flex-grow:1; margin:0 10px">
+                            <strong>${s.name}</strong> (${s.dose})<br>
+                            <small style="color:#aaa">${note}</small><br>
+                            ${s.stock <= 10 ? `<span class="stock-warn">Estoque: ${s.stock} (Atenção!)</span>` : `<span>Estoque: ${s.stock}</span>`}
+                        </div>
+                        <button class="btn-small" onclick="editSupp(${s.id})">Editar</button>
+                        <button class="btn-small" onclick="deleteSupp(${s.id})" style="background:#e57373">X</button>
+                    </div>
+                </div>
+            `;
+        });
     }
 
     carregarDados();
