@@ -163,15 +163,26 @@
 
     window.deleteSupp = async (id) => { state.supps = state.supps.filter(s => s.id !== id); await sync(); };
 
-    window.toggleSupp = async (id) => {
+   window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
+        
+        // Inverte o estado
         s.taken = !s.taken;
+        
+        // Ajusta estoque
         s.taken ? s.stock-- : s.stock++;
-        const hoje = new Date().toLocaleDateString();
+
+        // Calcula a porcentagem atual
+        const total = state.supps.length;
         const tomados = state.supps.filter(i => i.taken).length;
-        state.historico[hoje] = (tomados / state.supps.length) * 100;
-        render();
-        await sync();
+        const porcentagem = total > 0 ? (tomados / total) * 100 : 0;
+        
+        // Atualiza histórico e interface IMEDIATAMENTE
+        const hoje = new Date().toLocaleDateString();
+        state.historico[hoje] = porcentagem;
+        
+        render(); // Atualiza a tela antes de salvar
+        await sync(); // Salva no Firebase depois
     };
 
     function render() {
