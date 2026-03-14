@@ -3,100 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HealthTrack - Pro</title>
+    <title>HealthTrack Firebase</title>
     <style>
-        :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; --danger: #e57373; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
-        h1, h2 { color: var(--accent); }
-        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .supp-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-        .check-big { width: 30px; height: 30px; accent-color: var(--accent); }
-        .btn { background: var(--accent); border: none; padding: 10px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
-        .btn-del { background: #444; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8em; }
-        input, textarea { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box; }
-        .stock-warn { color: var(--danger); font-weight: bold; font-size: 0.8em; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
+        .btn { background: var(--accent); border: none; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; margin-top: 5px; color: black; font-weight: bold; }
+        input { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: none; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>HealthTrack</h1>
-    
-    <!-- Formulário para Adicionar -->
+    <h1>HealthTrack Cloud</h1>
     <div class="card">
-        <h3>Adicionar Item</h3>
-        <input type="text" id="name" placeholder="Nome (ex: Ferro, Vitamina D)">
-        <input type="text" id="dose" placeholder="Dosagem (ex: 500mg, 1 cap)">
-        <input type="number" id="stock" placeholder="Quantidade inicial no pote">
-        <button class="btn" onclick="addSupp()">Adicionar ao Rastreamento</button>
+        <input type="text" id="name" placeholder="Nome do Suplemento">
+        <input type="text" id="dose" placeholder="Dosagem">
+        <button class="btn" onclick="adicionar()">Adicionar</button>
     </div>
-
-    <div id="supp-list"></div>
-
-    <button class="btn" onclick="resetDay()" style="background: #e57373; color: white;">Finalizar/Resetar Dia</button>
+    <div id="supp-list">Carregando...</div>
 </div>
 
-<script>
-    let state = JSON.parse(localStorage.getItem('healthApp')) || { supps: [] };
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    function addSupp() {
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOy2mwBKNkI7wgl2oWiKa1tgxU188IaoI",
+        authDomain: "app-lembrete1.firebaseapp.com",
+        projectId: "app-lembrete1",
+        storageBucket: "app-lembrete1.firebasestorage.app",
+        messagingSenderId: "811778254789",
+        appId: "1:811778254789:web:c7770b298b49cb82400dac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let state = { supps: [] };
+
+    async function carregarDados() {
+        const docRef = doc(db, "data", "minhaLista");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            state.supps = docSnap.data().supps;
+            render();
+        } else {
+            document.getElementById('supp-list').innerHTML = "Nenhum suplemento cadastrado.";
+        }
+    }
+
+    async function salvarDados() {
+        await setDoc(doc(db, "data", "minhaLista"), { supps: state.supps });
+        render();
+    }
+
+    window.adicionar = async () => {
         const name = document.getElementById('name').value;
         const dose = document.getElementById('dose').value;
-        const stock = parseInt(document.getElementById('stock').value);
-
-        if(!name || !dose || !stock) return alert("Preencha todos os campos!");
-
-        state.supps.push({ id: Date.now(), name, dose, stock, taken: false });
-        localStorage.setItem('healthApp', JSON.stringify(state));
-        render();
-    }
-
-    function deleteSupp(id) {
-        state.supps = state.supps.filter(s => s.id !== id);
-        render();
-    }
-
-    function toggleSupp(id) {
-        const s = state.supps.find(item => item.id === id);
-        if (s.taken) { s.stock += 1; s.taken = false; }
-        else { s.stock -= 1; s.taken = true; }
-        render();
-    }
+        state.supps.push({ name, dose });
+        await salvarDados();
+    };
 
     function render() {
         const list = document.getElementById('supp-list');
-        list.innerHTML = '';
-
-        state.supps.forEach(s => {
-            let note = '';
-            if(s.name.toLowerCase().includes('ferro')) note = '⚠️ Não tomar com café/leite.';
-            if(s.name.toLowerCase().includes('vitamina d')) note = '💡 Tomar após refeição com gordura.';
-            if(s.name.toLowerCase().includes('magnésio')) note = '🌙 Ideal antes de dormir.';
-
-            list.innerHTML += `
-                <div class="card">
-                    <div class="supp-item">
-                        <input type="checkbox" class="check-big" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${s.id})">
-                        <div style="flex-grow: 1;">
-                            <strong>${s.name}</strong> (${s.dose})<br>
-                            <small>${note}</small><br>
-                            ${s.stock <= 10 ? `<span class="stock-warn">⚠️ Estoque Baixo: ${s.stock} restantes</span>` : `<span>Estoque: ${s.stock}</span>`}
-                        </div>
-                        <button class="btn-del" onclick="deleteSupp(${s.id})">Excluir</button>
-                    </div>
-                </div>
-            `;
-        });
-        localStorage.setItem('healthApp', JSON.stringify(state));
+        list.innerHTML = state.supps.map(s => `
+            <div class="card"><strong>${s.name}</strong> - ${s.dose}</div>
+        `).join('');
     }
 
-    function resetDay() {
-        state.supps.forEach(s => s.taken = false);
-        render();
-    }
-
-    render();
+    carregarDados();
 </script>
 </body>
 </html>
