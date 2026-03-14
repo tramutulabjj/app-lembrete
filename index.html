@@ -172,17 +172,23 @@
         // Ajusta estoque
         s.taken ? s.stock-- : s.stock++;
 
+        // --- PROTEÇÃO ADICIONADA ---
+        if (!state.historico) {
+            state.historico = {};
+        }
+
         // Calcula a porcentagem atual
         const total = state.supps.length;
         const tomados = state.supps.filter(i => i.taken).length;
         const porcentagem = total > 0 ? (tomados / total) * 100 : 0;
         
-        // Atualiza histórico e interface IMEDIATAMENTE
+        // Atualiza histórico
         const hoje = new Date().toLocaleDateString();
         state.historico[hoje] = porcentagem;
         
-        render(); // Atualiza a tela antes de salvar
-        await sync(); // Salva no Firebase depois
+        // Atualiza a tela e depois salva
+        render();
+        await sync();
     };
 
     function render() {
