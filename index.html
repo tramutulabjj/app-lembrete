@@ -3,118 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HealthTrack - Performance</title>
+    <title>HealthTrack - Pro</title>
     <style>
-        :root {
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --accent: #50c878; /* Verde Esmeralda */
-            --text: #ffffff;
-            --text-dim: #b3b3b3;
-        }
-
+        :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; --danger: #e57373; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
         h1, h2 { color: var(--accent); }
-        
         .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        
-        .supp-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .supp-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .check-big { width: 30px; height: 30px; accent-color: var(--accent); }
-        
-        .alert { color: #ffb74d; font-size: 0.85em; margin-top: 5px; font-weight: bold; }
-        .stock-warn { color: #e57373; font-weight: bold; }
-        
-        .btn { background: var(--accent); border: none; padding: 10px 20px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        
-        .progress-bar { height: 10px; background: #333; border-radius: 5px; margin: 20px 0; overflow: hidden; }
-        #progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.3s; }
+        .btn { background: var(--accent); border: none; padding: 10px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn-del { background: #444; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8em; }
+        input, textarea { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box; }
+        .stock-warn { color: var(--danger); font-weight: bold; font-size: 0.8em; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>HealthTrack</h1>
-    <div id="cycle-day">Dia 1 de 30</div>
     
-    <div class="progress-bar"><div id="progress-fill"></div></div>
+    <!-- Formulário para Adicionar -->
+    <div class="card">
+        <h3>Adicionar Item</h3>
+        <input type="text" id="name" placeholder="Nome (ex: Ferro, Vitamina D)">
+        <input type="text" id="dose" placeholder="Dosagem (ex: 500mg, 1 cap)">
+        <input type="number" id="stock" placeholder="Quantidade inicial no pote">
+        <button class="btn" onclick="addSupp()">Adicionar ao Rastreamento</button>
+    </div>
 
     <div id="supp-list"></div>
 
-    <div class="card">
-        <h3>Diário de Performance</h3>
-        <label><input type="checkbox" id="caimbra"> Cãibra na Madrugada?</label><br>
-        <label><input type="checkbox" id="fome"> Vontade de Comer?</label><br>
-        <label><input type="checkbox" id="fadiga"> Fadiga no Treino?</label><br>
-        <textarea id="nota" placeholder="Nota do dia..." style="width:100%; margin-top:10px; background:#333; color:white; border:none;"></textarea>
-    </div>
-
-    <button class="btn" onclick="resetDay()">Finalizar/Resetar Dia</button>
+    <button class="btn" onclick="resetDay()" style="background: #e57373; color: white;">Finalizar/Resetar Dia</button>
 </div>
 
 <script>
-    let state = JSON.parse(localStorage.getItem('healthApp')) || {
-        supps: [
-            { id: 1, name: 'Ferro', dose: '1 cap', stock: 20, taken: false },
-            { id: 2, name: 'Vitamina D', dose: '2000ui', stock: 5, taken: false },
-            { id: 3, name: 'Magnésio', dose: '400mg', stock: 30, taken: false }
-        ],
-        day: 1
-    };
+    let state = JSON.parse(localStorage.getItem('healthApp')) || { supps: [] };
+
+    function addSupp() {
+        const name = document.getElementById('name').value;
+        const dose = document.getElementById('dose').value;
+        const stock = parseInt(document.getElementById('stock').value);
+
+        if(!name || !dose || !stock) return alert("Preencha todos os campos!");
+
+        state.supps.push({ id: Date.now(), name, dose, stock, taken: false });
+        localStorage.setItem('healthApp', JSON.stringify(state));
+        render();
+    }
+
+    function deleteSupp(id) {
+        state.supps = state.supps.filter(s => s.id !== id);
+        render();
+    }
+
+    function toggleSupp(id) {
+        const s = state.supps.find(item => item.id === id);
+        if (s.taken) { s.stock += 1; s.taken = false; }
+        else { s.stock -= 1; s.taken = true; }
+        render();
+    }
 
     function render() {
         const list = document.getElementById('supp-list');
         list.innerHTML = '';
-        let takenCount = 0;
 
-        state.supps.forEach((s, index) => {
-            if(s.taken) takenCount++;
-            
+        state.supps.forEach(s => {
             let note = '';
-            if(s.name === 'Ferro') note = '⚠️ Não tomar com café ou leite.';
-            if(s.name === 'Vitamina D') note = '💡 Tomar após refeição com gordura.';
-            if(s.name === 'Magnésio') note = '🌙 Ideal antes de dormir.';
-
-            const stockWarn = s.stock <= 10 ? `<div class="stock-warn">⚠️ Estoque Baixo: Restam ${s.stock}</div>` : '';
+            if(s.name.toLowerCase().includes('ferro')) note = '⚠️ Não tomar com café/leite.';
+            if(s.name.toLowerCase().includes('vitamina d')) note = '💡 Tomar após refeição com gordura.';
+            if(s.name.toLowerCase().includes('magnésio')) note = '🌙 Ideal antes de dormir.';
 
             list.innerHTML += `
                 <div class="card">
                     <div class="supp-item">
-                        <input type="checkbox" class="check-big" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${index})">
-                        <div>
+                        <input type="checkbox" class="check-big" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${s.id})">
+                        <div style="flex-grow: 1;">
                             <strong>${s.name}</strong> (${s.dose})<br>
-                            <small>${note}</small>
-                            ${stockWarn}
+                            <small>${note}</small><br>
+                            ${s.stock <= 10 ? `<span class="stock-warn">⚠️ Estoque Baixo: ${s.stock} restantes</span>` : `<span>Estoque: ${s.stock}</span>`}
                         </div>
+                        <button class="btn-del" onclick="deleteSupp(${s.id})">Excluir</button>
                     </div>
                 </div>
             `;
         });
-
-        document.getElementById('progress-fill').style.width = (takenCount / state.supps.length) * 100 + '%';
         localStorage.setItem('healthApp', JSON.stringify(state));
-    }
-
-    function toggleSupp(index) {
-        if (!state.supps[index].taken) {
-            state.supps[index].stock -= 1;
-        } else {
-            state.supps[index].stock += 1;
-        }
-        state.supps[index].taken = !state.supps[index].taken;
-        render();
     }
 
     function resetDay() {
         state.supps.forEach(s => s.taken = false);
-        state.day += 1;
-        document.getElementById('caimbra').checked = false;
-        document.getElementById('fome').checked = false;
-        document.getElementById('fadiga').checked = false;
-        document.getElementById('nota').value = '';
-        document.getElementById('cycle-day').innerText = `Dia ${state.day} de 30`;
         render();
-        alert("Dados salvos e dia resetado!");
     }
 
     render();
