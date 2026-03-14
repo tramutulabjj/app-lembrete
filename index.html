@@ -10,38 +10,44 @@
         .container { max-width: 500px; margin: 0 auto; }
         h1 { color: var(--accent); text-align: center; }
         .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .supp-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+        .supp-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .btn { background: var(--accent); border: none; padding: 10px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
         .btn-small { background: #444; color: white; padding: 5px 8px; border-radius: 5px; font-size: 0.75em; border: none; cursor: pointer; }
         input { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box; }
         .stock-warn { color: var(--danger); font-weight: bold; font-size: 0.8em; }
-        #app-content, #calendario-section { display: none; }
+        #app-content { display: none; }
+        /* Estilo do Calendário */
+        #calendario-section { display: none; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
         .day-box { padding: 8px; background: #333; text-align: center; border-radius: 5px; font-size: 0.8em; }
-        .day-done { background: var(--accent) !important; color: black; font-weight: bold; }
+        .day-done { background: var(--accent); color: black; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1 id="titulo-data">HealthTrack</h1>
-    <div id="login-section" class="card"><button class="btn" id="login-btn">Entrar com Google</button></div>
+    
+    <div id="login-section" class="card">
+        <button class="btn" id="login-btn">Entrar com Google</button>
+    </div>
 
     <div id="app-content">
-        <button class="btn-small" onclick="logout()" style="background:#444">Sair</button>
+        <button class="btn-small" onclick="logout()" style="background:#444">Sair da Conta</button>
+        
         <div class="card">
             <h3>Progresso Diário</h3>
             <div style="height: 10px; background: #333; border-radius: 5px; overflow: hidden;">
                 <div id="progress-fill" style="height:100%; background:var(--accent); width:0%; transition:0.3s;"></div>
             </div>
             <p id="progress-text" style="text-align:center; margin-top:5px; font-size:0.9em;"></p>
-            <button class="btn" style="background:#444; color:white" onclick="toggleCalendario()">Ver Calendário Mensal</button>
+            <button class="btn" onclick="toggleCalendario()">Ver Calendário Mensal</button>
         </div>
 
         <div id="calendario-section" class="card">
             <div style="display:flex; justify-content:space-between; align-items:center">
                 <button class="btn-small" onclick="mudarMes(-1)">Anterior</button>
-                <h4 id="mes-titulo">Mês</h4>
+                <h4 id="mes-titulo"></h4>
                 <button class="btn-small" onclick="mudarMes(1)">Próximo</button>
             </div>
             <div id="calendar-grid" class="calendar-grid"></div>
@@ -50,8 +56,8 @@
         <div class="card">
             <h3 id="form-title">Adicionar Item</h3>
             <input type="hidden" id="edit-id">
-            <input type="text" id="name" placeholder="Nome">
-            <input type="text" id="dose" placeholder="Dosagem">
+            <input type="text" id="name" placeholder="Nome (ex: Ferro)">
+            <input type="text" id="dose" placeholder="Dosagem (ex: 500mg)">
             <input type="time" id="time">
             <input type="number" id="stock" placeholder="Estoque Inicial">
             <button class="btn" onclick="salvarItem()">Salvar Item</button>
@@ -61,10 +67,12 @@
 
         <div class="card">
             <h3>Diário de Performance</h3>
-            <label style="display:flex; align-items:center; gap:10px"><input type="checkbox" id="caimbra"> Cãibra?</label>
-            <label style="display:flex; align-items:center; gap:10px"><input type="checkbox" id="fome"> Fome?</label>
-            <label style="display:flex; align-items:center; gap:10px"><input type="checkbox" id="fadiga"> Fadiga?</label>
-            <input type="text" id="nota-dia" placeholder="Nota do dia...">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="caimbra" style="width: 20px; height: 20px;"> Cãibra na Madrugada?</label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fome" style="width: 20px; height: 20px;"> Vontade de Comer?</label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fadiga" style="width: 20px; height: 20px;"> Sentiu Fadiga no Treino?</label>
+            </div>
+            <input type="text" id="nota-dia" placeholder="Nota do dia..." style="margin-top: 15px;">
             <button class="btn" onclick="salvarDiario()">Salvar Diário</button>
         </div>
     </div>
@@ -94,8 +102,7 @@
 
     async function carregarDados() {
         const docSnap = await getDoc(doc(db, "users", currentUser.uid));
-        if(docSnap.exists()) { state = docSnap.data(); }
-        render();
+        if(docSnap.exists()) { state = docSnap.data(); render(); }
     }
 
     async function sync() { await setDoc(doc(db, "users", currentUser.uid), state); render(); }
@@ -103,7 +110,7 @@
     window.toggleCalendario = () => {
         const sec = document.getElementById('calendario-section');
         sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
-        renderCalendar();
+        if(sec.style.display === 'block') renderCalendar();
     };
 
     window.mudarMes = (delta) => { mesAtual.setMonth(mesAtual.getMonth() + delta); renderCalendar(); };
@@ -111,8 +118,8 @@
     function renderCalendar() {
         const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
         document.getElementById('mes-titulo').innerText = mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-        const diasNoMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate();
-        for(let i=1; i<=diasNoMes; i++) {
+        const dias = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate();
+        for(let i=1; i<=dias; i++) {
             const dataStr = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), i).toLocaleDateString();
             const done = state.historico[dataStr] === 100;
             grid.innerHTML += `<div class="day-box ${done ? 'day-done' : ''}">${i}</div>`;
@@ -131,7 +138,6 @@
         const time = document.getElementById('time').value;
         const stock = parseInt(document.getElementById('stock').value);
         if(!name || !dose || !time || isNaN(stock)) return alert("Preencha tudo!");
-        
         if (id) {
             const index = state.supps.findIndex(s => s.id == id);
             state.supps[index] = { ...state.supps[index], name, dose, time, stock };
@@ -180,7 +186,6 @@
         const progresso = state.supps.length > 0 ? (tomados / state.supps.length) * 100 : 0;
         document.getElementById('progress-fill').style.width = progresso + '%';
         document.getElementById('progress-text').innerText = `${Math.round(progresso)}% concluído hoje`;
-        renderCalendar();
     }
 </script>
 </body>
