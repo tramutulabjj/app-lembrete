@@ -51,17 +51,23 @@
 
         <div id="supp-list"></div>
 
-        <!-- Diário de Performance -->
+       <!-- Diário de Performance Ajustado -->
         <div class="card">
             <h3>Diário de Performance</h3>
-            <label><input type="checkbox" id="caimbra"> Cãibra na Madrugada?</label><br>
-            <label><input type="checkbox" id="fome"> Vontade de Comer?</label><br>
-            <label><input type="checkbox" id="fadiga"> Sentiu Fadiga no Treino?</label><br>
-            <input type="text" id="nota-dia" placeholder="Nota do dia...">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="caimbra" style="width: 20px; height: 20px;"> Cãibra na Madrugada?
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="fome" style="width: 20px; height: 20px;"> Vontade de Comer?
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="fadiga" style="width: 20px; height: 20px;"> Sentiu Fadiga no Treino?
+                </label>
+            </div>
+            <input type="text" id="nota-dia" placeholder="Nota do dia..." style="margin-top: 15px;">
             <button class="btn" onclick="salvarDiario()">Salvar Diário</button>
         </div>
-    </div>
-</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
