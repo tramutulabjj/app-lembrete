@@ -186,6 +186,38 @@
         const progresso = state.supps.length > 0 ? (tomados / state.supps.length) * 100 : 0;
         document.getElementById('progress-fill').style.width = progresso + '%';
         document.getElementById('progress-text').innerText = `${Math.round(progresso)}% concluído hoje`;
+
+window.toggleCalendario = () => {
+        const sec = document.getElementById('calendario-section');
+        if (sec.style.display === 'block') {
+            sec.style.display = 'none';
+        } else {
+            sec.style.display = 'block';
+            renderCalendar(); 
+        }
+    };
+
+    window.mudarMes = (delta) => {
+        mesAtual.setMonth(mesAtual.getMonth() + delta);
+        renderCalendar();
+    };
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-grid'); 
+        grid.innerHTML = '';
+        document.getElementById('mes-titulo').innerText = mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        
+        const ano = mesAtual.getFullYear();
+        const mes = mesAtual.getMonth();
+        const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+        
+        for(let i = 1; i <= diasNoMes; i++) {
+            const dataStr = new Date(ano, mes, i).toLocaleDateString();
+            const done = state.historico && state.historico[dataStr] === 100;
+            grid.innerHTML += `<div class="day-box ${done ? 'day-done' : ''}">${i}</div>`;
+        }
+    }
+        
     }
 </script>
 </body>
