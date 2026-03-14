@@ -1,22 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <head>
-    <!-- Outras tags meta -->
-    
-    <!-- Ícone para Android/Chrome -->
-    <link rel="icon" type="image/png" href="icon.png">
-    
-    <!-- Ícone para iPhone/iPad (Apple Touch Icon) -->
-    <link rel="apple-touch-icon" href="icon.png">
-    
-    <!-- Cor da barra do navegador no Android para combinar com o Dark Mode -->
-    <meta name="theme-color" content="#121212">
-    
-    <!-- Nome do App quando adicionado à tela inicial -->
-    <meta name="apple-mobile-web-app-title" content="HealthTrack">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-</head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HealthTrack - Pro</title>
@@ -45,16 +29,37 @@
 
     <div id="app-content">
         <button class="btn-small" onclick="logout()" style="background:#444">Sair da Conta</button>
-        <div class="card" style="margin-top:10px">
+        
+        <!-- Barra de Progresso -->
+        <div class="card">
+            <h3>Progresso Diário</h3>
+            <div style="height: 10px; background: #333; border-radius: 5px; overflow: hidden;">
+                <div id="progress-fill" style="height:100%; background:var(--accent); width:0%; transition:0.3s;"></div>
+            </div>
+            <p id="progress-text" style="text-align:center; margin-top:5px; font-size:0.9em;"></p>
+        </div>
+
+        <div class="card">
             <h3 id="form-title">Adicionar Item</h3>
             <input type="hidden" id="edit-id">
             <input type="text" id="name" placeholder="Nome (ex: Ferro)">
             <input type="text" id="dose" placeholder="Dosagem (ex: 500mg)">
-            <input type="time" id="time" title="Horário">
+            <input type="time" id="time">
             <input type="number" id="stock" placeholder="Estoque Inicial">
-            <button class="btn" onclick="salvarItem()">Salvar no Banco</button>
+            <button class="btn" onclick="salvarItem()">Salvar Item</button>
         </div>
+
         <div id="supp-list"></div>
+
+        <!-- Diário de Performance -->
+        <div class="card">
+            <h3>Diário de Performance</h3>
+            <label><input type="checkbox" id="caimbra"> Cãibra na Madrugada?</label><br>
+            <label><input type="checkbox" id="fome"> Vontade de Comer?</label><br>
+            <label><input type="checkbox" id="fadiga"> Sentiu Fadiga no Treino?</label><br>
+            <input type="text" id="nota-dia" placeholder="Nota do dia...">
+            <button class="btn" onclick="salvarDiario()">Salvar Diário</button>
+        </div>
     </div>
 </div>
 
@@ -78,7 +83,7 @@
     const provider = new GoogleAuthProvider();
 
     let currentUser = null;
-    let state = { supps: [] };
+    let state = { supps: [], diario: {} };
 
     document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
     window.logout = () => signOut(auth);
@@ -98,23 +103,34 @@
     async function carregarDados() {
         const docRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(docRef);
-        state.supps = docSnap.exists() ? docSnap.data().supps : [];
+        if(docSnap.exists()) {
+            state = docSnap.data();
+            // Preenche o diário se já existir
+            if(state.diario) {
+                document.getElementById('caimbra').checked = state.diario.caimbra || false;
+                document.getElementById('fome').checked = state.diario.fome || false;
+                document.getElementById('fadiga').checked = state.diario.fadiga || false;
+                document.getElementById('nota-dia').value = state.diario.nota || "";
+            }
+        }
         render();
     }
 
     async function sync() {
-        await setDoc(doc(db, "users", currentUser.uid), { supps: state.supps });
+        await setDoc(doc(db, "users", currentUser.uid), state);
         render();
     }
 
-    function limparFormulario() {
-        document.getElementById('edit-id').value = '';
-        document.getElementById('name').value = '';
-        document.getElementById('dose').value = '';
-        document.getElementById('time').value = '';
-        document.getElementById('stock').value = '';
-        document.getElementById('form-title').innerText = "Adicionar Item";
-    }
+    window.salvarDiario = async () => {
+        state.diario = {
+            caimbra: document.getElementById('caimbra').checked,
+            fome: document.getElementById('fome').checked,
+            fadiga: document.getElementById('fadiga').checked,
+            nota: document.getElementById('nota-dia').value
+        };
+        await sync();
+        alert("Diário de Performance salvo!");
+    };
 
     window.salvarItem = async () => {
         const id = document.getElementById('edit-id').value;
@@ -132,7 +148,8 @@
             state.supps.push({ id: Date.now(), name, dose, time, stock, taken: false });
         }
         
-        limparFormulario(); // Limpa e "fecha" o formulário
+        document.getElementById('edit-id').value = '';
+        document.getElementById('form-title').innerText = "Adicionar Item";
         await sync();
     };
 
@@ -161,7 +178,10 @@
     function render() {
         const list = document.getElementById('supp-list');
         list.innerHTML = '';
+        let tomados = 0;
+        
         state.supps.forEach(s => {
+            if(s.taken) tomados++;
             list.innerHTML += `
                 <div class="card">
                     <div class="supp-item">
@@ -177,6 +197,11 @@
                 </div>
             `;
         });
+
+        const total = state.supps.length;
+        const progresso = total > 0 ? (tomados / total) * 100 : 0;
+        document.getElementById('progress-fill').style.width = progresso + '%';
+        document.getElementById('progress-text').innerText = `${tomados} de ${total} tomados (${Math.round(progresso)}%)`;
     }
 </script>
 </body>
