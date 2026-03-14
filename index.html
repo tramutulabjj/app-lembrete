@@ -15,9 +15,7 @@
         .btn-small { background: #444; color: white; padding: 5px 8px; border-radius: 5px; font-size: 0.75em; border: none; cursor: pointer; }
         input { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box; }
         .stock-warn { color: var(--danger); font-weight: bold; font-size: 0.8em; }
-        #app-content { display: none; }
-        /* Estilo do Calendário */
-        #calendario-section { display: none; }
+        #app-content, #calendario-section { display: none; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
         .day-box { padding: 8px; background: #333; text-align: center; border-radius: 5px; font-size: 0.8em; }
         .day-done { background: var(--accent); color: black; font-weight: bold; }
@@ -56,8 +54,8 @@
         <div class="card">
             <h3 id="form-title">Adicionar Item</h3>
             <input type="hidden" id="edit-id">
-            <input type="text" id="name" placeholder="Nome (ex: Ferro)">
-            <input type="text" id="dose" placeholder="Dosagem (ex: 500mg)">
+            <input type="text" id="name" placeholder="Nome">
+            <input type="text" id="dose" placeholder="Dosagem">
             <input type="time" id="time">
             <input type="number" id="stock" placeholder="Estoque Inicial">
             <button class="btn" onclick="salvarItem()">Salvar Item</button>
@@ -121,7 +119,7 @@
         const dias = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate();
         for(let i=1; i<=dias; i++) {
             const dataStr = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), i).toLocaleDateString();
-            const done = state.historico[dataStr] === 100;
+            const done = state.historico && state.historico[dataStr] === 100;
             grid.innerHTML += `<div class="day-box ${done ? 'day-done' : ''}">${i}</div>`;
         }
     }
@@ -165,30 +163,14 @@
 
     window.deleteSupp = async (id) => { state.supps = state.supps.filter(s => s.id !== id); await sync(); };
 
- window.toggleSupp = async (id) => {
+    window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
-        
-        // Inverte o estado e ajusta o estoque
-        if (s.taken) {
-            s.taken = false;
-            s.stock++;
-        } else {
-            s.taken = true;
-            s.stock--;
-        }
-
-        // Calcula a porcentagem real
-        const total = state.supps.length;
-        const tomados = state.supps.filter(i => i.taken).length;
-        const porcentagem = total > 0 ? (tomados / total) * 100 : 0;
-        
+        s.taken = !s.taken;
+        s.taken ? s.stock-- : s.stock++;
         const hoje = new Date().toLocaleDateString();
-        state.historico[hoje] = porcentagem;
-        
-        // Força a renderização imediata na tela
+        const tomados = state.supps.filter(i => i.taken).length;
+        state.historico[hoje] = (tomados / state.supps.length) * 100;
         render();
-        
-        // Salva no banco de dados
         await sync();
     };
 
@@ -203,38 +185,7 @@
         const progresso = state.supps.length > 0 ? (tomados / state.supps.length) * 100 : 0;
         document.getElementById('progress-fill').style.width = progresso + '%';
         document.getElementById('progress-text').innerText = `${Math.round(progresso)}% concluído hoje`;
-
-window.toggleCalendario = () => {
-        const sec = document.getElementById('calendario-section');
-        if (sec.style.display === 'block') {
-            sec.style.display = 'none';
-        } else {
-            sec.style.display = 'block';
-            renderCalendar(); 
-        }
-    };
-
-    window.mudarMes = (delta) => {
-        mesAtual.setMonth(mesAtual.getMonth() + delta);
-        renderCalendar();
-    };
-
-    function renderCalendar() {
-        const grid = document.getElementById('calendar-grid'); 
-        grid.innerHTML = '';
-        document.getElementById('mes-titulo').innerText = mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-        
-        const ano = mesAtual.getFullYear();
-        const mes = mesAtual.getMonth();
-        const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-        
-        for(let i = 1; i <= diasNoMes; i++) {
-            const dataStr = new Date(ano, mes, i).toLocaleDateString();
-            const done = state.historico && state.historico[dataStr] === 100;
-            grid.innerHTML += `<div class="day-box ${done ? 'day-done' : ''}">${i}</div>`;
-        }
-    }
-        
+        if(document.getElementById('calendario-section').style.display === 'block') renderCalendar();
     }
 </script>
 </body>
