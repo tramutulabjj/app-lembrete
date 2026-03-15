@@ -100,7 +100,19 @@
 
     async function carregarDados() {
         const docSnap = await getDoc(doc(db, "users", currentUser.uid));
-        if(docSnap.exists()) { state = docSnap.data(); render(); }
+        if(docSnap.exists()) {
+            state = docSnap.data();
+            
+            // Lógica de Reset Automático
+            const hoje = new Date().toLocaleDateString();
+            if (state.dataUltimoAcesso !== hoje) {
+                state.supps.forEach(s => s.taken = false);
+                state.diario = { caimbra: false, fome: false, fadiga: false, nota: "" };
+                state.dataUltimoAcesso = hoje;
+                await sync();
+            }
+            render();
+        }
     }
 
     async function sync() { await setDoc(doc(db, "users", currentUser.uid), state); render(); }
@@ -166,16 +178,12 @@
     window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
         const doseQtd = parseInt(s.dose) || 1; 
-        
         s.taken = !s.taken;
         s.taken ? s.stock -= doseQtd : s.stock += doseQtd;
-
         if (!state.historico) state.historico = {};
         const total = state.supps.length;
         const tomados = state.supps.filter(i => i.taken).length;
-        const porcentagem = total > 0 ? (tomados / total) * 100 : 0;
-        
-        state.historico[new Date().toLocaleDateString()] = porcentagem;
+        state.historico[new Date().toLocaleDateString()] = total > 0 ? (tomados / total) * 100 : 0;
         render();
         await sync();
     };
@@ -183,7 +191,6 @@
     function render() {
         document.getElementById('titulo-data').innerText = new Date().toLocaleDateString();
         const list = document.getElementById('supp-list'); list.innerHTML = '';
-        
         const grupos = { manha: [], tarde: [], noite: [] };
         state.supps.forEach(s => {
             const hora = parseInt(s.time.split(':')[0]);
@@ -202,7 +209,7 @@
 
         mostrarGrupo(grupos.manha, "🌅 Manhã");
         mostrarGrupo(grupos.tarde, "☀️ Tarde");
-        mostrarGrupo(grupos.noite, "🌙 Noite");
+        mostrarGrupo(grupos.noite, "🌙 Night");
 
         const tomados = state.supps.filter(i => i.taken).length;
         const progresso = state.supps.length > 0 ? (tomados / state.supps.length) * 100 : 0;
