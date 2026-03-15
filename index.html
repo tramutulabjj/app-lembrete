@@ -55,7 +55,7 @@
             <h3 id="form-title">Adicionar Item</h3>
             <input type="hidden" id="edit-id">
             <input type="text" id="name" placeholder="Nome">
-            <input type="text" id="dose" placeholder="Dosagem">
+            <input type="text" id="dose" placeholder="Dosagem (ex: 2 cp)">
             <input type="time" id="time">
             <input type="number" id="stock" placeholder="Estoque Inicial">
             <button class="btn" onclick="salvarItem()">Salvar Item</button>
@@ -163,30 +163,19 @@
 
     window.deleteSupp = async (id) => { state.supps = state.supps.filter(s => s.id !== id); await sync(); };
 
-   window.toggleSupp = async (id) => {
+    window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
+        const doseQtd = parseInt(s.dose) || 1; 
         
-        // Inverte o estado
         s.taken = !s.taken;
-        
-        // Ajusta estoque
-        s.taken ? s.stock-- : s.stock++;
+        s.taken ? s.stock -= doseQtd : s.stock += doseQtd;
 
-        // --- PROTEÇÃO ADICIONADA ---
-        if (!state.historico) {
-            state.historico = {};
-        }
-
-        // Calcula a porcentagem atual
+        if (!state.historico) state.historico = {};
         const total = state.supps.length;
         const tomados = state.supps.filter(i => i.taken).length;
         const porcentagem = total > 0 ? (tomados / total) * 100 : 0;
         
-        // Atualiza histórico
-        const hoje = new Date().toLocaleDateString();
-        state.historico[hoje] = porcentagem;
-        
-        // Atualiza a tela e depois salva
+        state.historico[new Date().toLocaleDateString()] = porcentagem;
         render();
         await sync();
     };
@@ -194,11 +183,28 @@
     function render() {
         document.getElementById('titulo-data').innerText = new Date().toLocaleDateString();
         const list = document.getElementById('supp-list'); list.innerHTML = '';
-        let tomados = 0;
+        
+        const grupos = { manha: [], tarde: [], noite: [] };
         state.supps.forEach(s => {
-            if(s.taken) tomados++;
-            list.innerHTML += `<div class="card"><div class="supp-item"><input type="checkbox" style="width:25px;height:25px" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${s.id})"> <div style="flex-grow:1; margin:0 10px"><strong>${s.name}</strong> (${s.dose})<br><small style="color:var(--accent)">⏰ ${s.time}</small><br><span class="${s.stock <= 10 ? 'stock-warn' : ''}">Estoque: ${s.stock}</span></div> <button class="btn-small" onclick="editSupp(${s.id})">Edit</button> <button class="btn-small" onclick="deleteSupp(${s.id})" style="background:#e57373">X</button></div></div>`;
+            const hora = parseInt(s.time.split(':')[0]);
+            if (hora < 12) grupos.manha.push(s);
+            else if (hora < 18) grupos.tarde.push(s);
+            else grupos.noite.push(s);
         });
+
+        const mostrarGrupo = (lista, titulo) => {
+            if(lista.length === 0) return;
+            list.innerHTML += `<h3 style="color:#50c878; margin-top:20px">${titulo}</h3>`;
+            lista.forEach(s => {
+                list.innerHTML += `<div class="card"><div class="supp-item"><input type="checkbox" style="width:25px;height:25px" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${s.id})"> <div style="flex-grow:1; margin:0 10px"><strong>${s.name}</strong> (${s.dose})<br><small style="color:var(--accent)">⏰ ${s.time}</small><br><span class="${s.stock <= 10 ? 'stock-warn' : ''}">Estoque: ${s.stock}</span></div> <button class="btn-small" onclick="editSupp(${s.id})">Edit</button> <button class="btn-small" onclick="deleteSupp(${s.id})" style="background:#e57373">X</button></div></div>`;
+            });
+        };
+
+        mostrarGrupo(grupos.manha, "🌅 Manhã");
+        mostrarGrupo(grupos.tarde, "☀️ Tarde");
+        mostrarGrupo(grupos.noite, "🌙 Noite");
+
+        const tomados = state.supps.filter(i => i.taken).length;
         const progresso = state.supps.length > 0 ? (tomados / state.supps.length) * 100 : 0;
         document.getElementById('progress-fill').style.width = progresso + '%';
         document.getElementById('progress-text').innerText = `${Math.round(progresso)}% concluído hoje`;
