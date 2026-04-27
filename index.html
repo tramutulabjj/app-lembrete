@@ -8,7 +8,7 @@
         :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; --danger: #e57373; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
         .container { max-width: 500px; margin: 0 auto; }
-        h1 { color: var(--accent); text-align: center; }
+        h1 { color: var(--accent); text-align: center; font-size: 1.8em; margin-top: 10px; margin-bottom: 20px; }
         .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .supp-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .btn { background: var(--accent); border: none; padding: 12px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
@@ -23,7 +23,7 @@
         .day-box { padding: 8px; background: #333; text-align: center; border-radius: 5px; font-size: 0.8em; }
         .day-done { background: var(--accent); color: black; font-weight: bold; }
         
-        /* Checkboxes Dias da Semana (Arrumado) */
+        /* Checkboxes Dias da Semana */
         .days-checkboxes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
         .days-checkboxes label { display: flex; align-items: center; gap: 5px; background: #2a2a2a; padding: 8px; border-radius: 6px; font-size: 0.85em; cursor: pointer; border: 1px solid #444;}
         .days-checkboxes input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
@@ -126,13 +126,13 @@
     let state = { supps:[], diario: {}, historico: {}, dataUltimoAcesso: "" };
     let mesAtual = new Date();
 
-    // Login e Logout (Corrigido)
+    // Login e Logout
     document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
     
     window.fazerLogout = async () => { 
         try {
             await signOut(auth); 
-            location.reload(); // Recarrega a página para limpar
+            location.reload(); 
         } catch (e) {
             console.error(e);
             alert("Erro ao sair da conta.");
@@ -157,35 +157,29 @@
         }
     });
 
-    // Carregar Dados e Corrigir Erros Antigos
+    // Carregar Dados e Reset Automático
     async function carregarDados() {
         try {
             const docSnap = await getDoc(doc(db, "users", currentUser.uid));
             if(docSnap.exists()) {
                 const data = docSnap.data();
                 
-                // VACINA CONTRA ERROS: Arruma os remédios antigos que não tem "dias"
                 state.supps = (data.supps ||[]).map(s => {
-                    return {
-                        ...s,
-                        dias: s.dias || ['0','1','2','3','4','5','6'] // Se não tiver dia, marca todos
-                    };
+                    return { ...s, dias: s.dias || ['0','1','2','3','4','5','6'] };
                 });
                 
                 state.diario = data.diario || {};
                 state.historico = data.historico || {};
                 state.dataUltimoAcesso = data.dataUltimoAcesso || "";
 
-                // Reset automático na virada do dia
                 const hoje = new Date().toLocaleDateString();
                 if (state.dataUltimoAcesso !== hoje) {
                     state.supps.forEach(s => s.taken = false);
                     state.diario = { caimbra: false, fome: false, fadiga: false, nota: "" };
                     state.dataUltimoAcesso = hoje;
-                    await sync(); // Salva o reset
+                    await sync(); 
                 }
                 
-                // Preenche o formulário do diário
                 document.getElementById('caimbra').checked = state.diario.caimbra || false;
                 document.getElementById('fome').checked = state.diario.fome || false;
                 document.getElementById('fadiga').checked = state.diario.fadiga || false;
@@ -193,7 +187,7 @@
 
                 render();
             } else {
-                render(); // Se não tiver nada, renderiza vazio
+                render(); 
             }
         } catch (e) {
             console.error("Erro ao carregar os dados", e);
@@ -254,7 +248,6 @@
             state.supps.push({ id: Date.now(), name, dose, time, stock, taken: false, dias });
         }
         
-        // Limpar form
         document.getElementById('edit-id').value = '';
         document.getElementById('name').value = '';
         document.getElementById('dose').value = '';
@@ -262,7 +255,7 @@
         document.getElementById('stock').value = '';
         document.querySelectorAll('#dias-semana input').forEach(i => i.checked = false);
         document.getElementById('form-title').innerText = "Adicionar Item";
-        document.getElementById('form-adicionar').style.display = 'none'; // Esconde form
+        document.getElementById('form-adicionar').style.display = 'none'; 
         
         await sync();
     };
@@ -276,11 +269,10 @@
         document.getElementById('time').value = s.time;
         document.getElementById('stock').value = s.stock;
         
-        // Marca os dias certos
         document.querySelectorAll('#dias-semana input').forEach(i => i.checked = s.dias.includes(i.value));
         
         document.getElementById('form-title').innerText = "Editando Item";
-        document.getElementById('form-adicionar').style.display = 'block'; // Abre form
+        document.getElementById('form-adicionar').style.display = 'block'; 
     };
 
     // Deletar
@@ -294,7 +286,7 @@
     // Clicar no checkbox
     window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
-        const doseQtd = parseInt(s.dose) || 1; // Pega só o número da dosagem
+        const doseQtd = parseInt(s.dose) || 1; 
         
         s.taken = !s.taken;
         s.taken ? s.stock -= doseQtd : s.stock += doseQtd;
@@ -313,17 +305,23 @@
 
     // Renderizar
     function render() {
-        document.getElementById('titulo-data').innerText = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        // --- FORMATAÇÃO DA DATA CORRIGIDA AQUI ---
+        const d = new Date();
+        const nomesDias =['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const diaNum = d.getDate().toString().padStart(2, '0');
+        const mesNum = (d.getMonth() + 1).toString().padStart(2, '0');
+        const anoNum = d.getFullYear();
+        
+        document.getElementById('titulo-data').innerText = `${nomesDias[d.getDay()]}, ${diaNum}/${mesNum}/${anoNum}`;
+        // -----------------------------------------
         
         const list = document.getElementById('supp-list'); 
         list.innerHTML = '';
         
         const diaSemana = new Date().getDay().toString();
-        
-        // Pega APENAS os suplementos marcados para O DIA DE HOJE
         const listaHoje = state.supps.filter(s => s.dias.includes(diaSemana));
         
-        const grupos = { manha: [], tarde:[], noite: [] };
+        const grupos = { manha: [], tarde:[], noite:[] };
         
         listaHoje.forEach(s => {
             const hora = parseInt(s.time.split(':')[0]);
