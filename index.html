@@ -6,7 +6,7 @@
     <title>HealthTrack - Pro</title>
     <style>
         :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; --danger: #e57373; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
         h1 { color: var(--accent); text-align: center; }
         .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -30,7 +30,7 @@
     <div id="login-section" class="card"><button class="btn" id="login-btn">Entrar com Google</button></div>
 
     <div id="app-content">
-        <button class="btn-small" onclick="logout()" style="background:#444">Sair da Conta</button>
+        <button class="btn-small" onclick="fazerLogout()" style="background:#444">Sair da Conta</button>
         
         <div class="card">
             <h3>Progresso Diário</h3>
@@ -98,7 +98,7 @@
     let mesAtual = new Date();
 
     document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-    window.logout = () => signOut(auth);
+    window.fazerLogout = async () => { await signOut(auth); location.reload(); };
     window.toggleForm = () => document.getElementById('form-adicionar').style.display = document.getElementById('form-adicionar').style.display === 'block' ? 'none' : 'block';
 
     onAuthStateChanged(auth, (user) => {
@@ -122,12 +122,7 @@
 
     async function sync() { await setDoc(doc(db, "users", currentUser.uid), state); render(); }
 
-    window.toggleCalendario = () => {
-        const sec = document.getElementById('calendario-section');
-        sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
-        if(sec.style.display === 'block') renderCalendar();
-    };
-
+    window.toggleCalendario = () => { const sec = document.getElementById('calendario-section'); sec.style.display = sec.style.display === 'block' ? 'none' : 'block'; if(sec.style.display === 'block') renderCalendar(); };
     window.mudarMes = (delta) => { mesAtual.setMonth(mesAtual.getMonth() + delta); renderCalendar(); };
 
     function renderCalendar() {
@@ -171,6 +166,7 @@
         document.getElementById('dose').value = s.dose;
         document.getElementById('time').value = s.time;
         document.getElementById('stock').value = s.stock;
+        document.querySelectorAll('#dias-semana input').forEach(i => i.checked = s.dias.includes(i.value));
         document.getElementById('form-title').innerText = "Editando";
         document.getElementById('form-adicionar').style.display = 'block';
     };
@@ -179,12 +175,12 @@
 
     window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
-        const doseQtd = parseInt(s.dose) || 1;
+        const doseQtd = parseInt(s.dose) || 1; 
         s.taken = !s.taken;
         s.taken ? s.stock -= doseQtd : s.stock += doseQtd;
         if (!state.historico) state.historico = {};
-        const hoje = new Date().getDay().toString();
-        const listaHoje = state.supps.filter(i => i.dias.includes(hoje));
+        const hojeDia = new Date().getDay().toString();
+        const listaHoje = state.supps.filter(i => i.dias.includes(hojeDia));
         const tomados = listaHoje.filter(i => i.taken).length;
         state.historico[new Date().toLocaleDateString()] = listaHoje.length > 0 ? (tomados / listaHoje.length) * 100 : 0;
         render(); await sync();
@@ -200,7 +196,6 @@
             const hora = parseInt(s.time.split(':')[0]);
             if (hora < 12) grupos.manha.push(s); else if (hora < 18) grupos.tarde.push(s); else grupos.noite.push(s);
         });
-
         const mostrarGrupo = (lista, titulo) => {
             if(lista.length === 0) return;
             list.innerHTML += `<h3 style="color:#50c878; margin-top:20px">${titulo}</h3>`;
