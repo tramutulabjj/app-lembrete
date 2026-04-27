@@ -6,7 +6,7 @@
     <title>HealthTrack - Pro</title>
     <style>
         :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; --danger: #e57373; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
         h1 { color: var(--accent); text-align: center; }
         .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -15,7 +15,7 @@
         .btn-small { background: #444; color: white; padding: 5px 8px; border-radius: 5px; font-size: 0.75em; border: none; cursor: pointer; }
         input { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box; }
         .stock-warn { color: var(--danger); font-weight: bold; font-size: 0.8em; }
-        #app-content, #calendario-section, #form-adicionar { display: none; } /* form-adicionar começa escondido */
+        #app-content, #calendario-section, #form-adicionar { display: none; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
         .day-box { padding: 8px; background: #333; text-align: center; border-radius: 5px; font-size: 0.8em; }
         .day-done { background: var(--accent); color: black; font-weight: bold; }
@@ -27,9 +27,7 @@
 <div class="container">
     <h1 id="titulo-data">HealthTrack</h1>
     
-    <div id="login-section" class="card">
-        <button class="btn" id="login-btn">Entrar com Google</button>
-    </div>
+    <div id="login-section" class="card"><button class="btn" id="login-btn">Entrar com Google</button></div>
 
     <div id="app-content">
         <button class="btn-small" onclick="logout()" style="background:#444">Sair da Conta</button>
@@ -52,9 +50,7 @@
             <div id="calendar-grid" class="calendar-grid"></div>
         </div>
 
-        <!-- Botão para abrir o formulário -->
         <button class="btn" style="background:#555; color:white;" onclick="toggleForm()">+ Adicionar novo item</button>
-
         <div id="form-adicionar" class="card">
             <h3 id="form-title">Adicionar Item</h3>
             <input type="hidden" id="edit-id">
@@ -63,12 +59,9 @@
             <input type="time" id="time">
             <input type="number" id="stock" placeholder="Estoque Inicial">
             <div class="days-checkboxes" id="dias-semana">
-                <label><input type="checkbox" value="0">Dom</label>
-                <label><input type="checkbox" value="1">Seg</label>
-                <label><input type="checkbox" value="2">Ter</label>
-                <label><input type="checkbox" value="3">Qua</label>
-                <label><input type="checkbox" value="4">Qui</label>
-                <label><input type="checkbox" value="5">Sex</label>
+                <label><input type="checkbox" value="0">Dom</label> <label><input type="checkbox" value="1">Seg</label>
+                <label><input type="checkbox" value="2">Ter</label> <label><input type="checkbox" value="3">Qua</label>
+                <label><input type="checkbox" value="4">Qui</label> <label><input type="checkbox" value="5">Sex</label>
                 <label><input type="checkbox" value="6">Sáb</label>
             </div>
             <button class="btn" onclick="salvarItem()">Salvar Item</button>
@@ -76,13 +69,12 @@
 
         <div id="supp-list"></div>
 
-        <!-- ... (Diário de Performance permanece igual) ... -->
         <div class="card">
             <h3>Diário de Performance</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="caimbra" style="width: 20px; height: 20px;"> Cãibra na Madrugada?</label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="caimbra" style="width: 20px; height: 20px;"> Cãibra?</label>
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fome" style="width: 20px; height: 20px;"> Vontade de Comer?</label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fadiga" style="width: 20px; height: 20px;"> Sentiu Fadiga no Treino?</label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fadiga" style="width: 20px; height: 20px;"> Sentiu Fadiga?</label>
             </div>
             <input type="text" id="nota-dia" placeholder="Nota do dia..." style="margin-top: 15px;">
             <button class="btn" onclick="salvarDiario()">Salvar Diário</button>
@@ -91,7 +83,6 @@
 </div>
 
 <script type="module">
-    // ... (Mantenha as importações do Firebase)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -102,16 +93,128 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // Adicione a função para mostrar/esconder o form
-    window.toggleForm = () => {
-        const f = document.getElementById('form-adicionar');
-        f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    let currentUser = null;
+    let state = { supps: [], diario: {}, historico: {}, dataUltimoAcesso: "" };
+    let mesAtual = new Date();
+
+    document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+    window.logout = () => signOut(auth);
+    window.toggleForm = () => document.getElementById('form-adicionar').style.display = document.getElementById('form-adicionar').style.display === 'block' ? 'none' : 'block';
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) { currentUser = user; document.getElementById('login-section').style.display = 'none'; document.getElementById('app-content').style.display = 'block'; carregarDados(); }
+    });
+
+    async function carregarDados() {
+        const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+        if(docSnap.exists()) {
+            state = docSnap.data();
+            const hoje = new Date().toLocaleDateString();
+            if (state.dataUltimoAcesso !== hoje) {
+                state.supps.forEach(s => s.taken = false);
+                state.diario = { caimbra: false, fome: false, fadiga: false, nota: "" };
+                state.dataUltimoAcesso = hoje;
+                await sync();
+            }
+            render();
+        }
+    }
+
+    async function sync() { await setDoc(doc(db, "users", currentUser.uid), state); render(); }
+
+    window.toggleCalendario = () => {
+        const sec = document.getElementById('calendario-section');
+        sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
+        if(sec.style.display === 'block') renderCalendar();
     };
 
-    // ... (restante das funções: toggleCalendario, mudarMes, salvarItem, etc.)
-    // DICA: dentro da salvarItem, adicione f.style.display = 'none' no final para fechar após salvar!
-    
-    // (O resto do seu código permanece igual!)
+    window.mudarMes = (delta) => { mesAtual.setMonth(mesAtual.getMonth() + delta); renderCalendar(); };
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
+        document.getElementById('mes-titulo').innerText = mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        const dias = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate();
+        for(let i=1; i<=dias; i++) {
+            const dataStr = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), i).toLocaleDateString();
+            const done = state.historico && state.historico[dataStr] === 100;
+            grid.innerHTML += `<div class="day-box ${done ? 'day-done' : ''}">${i}</div>`;
+        }
+    }
+
+    window.salvarDiario = async () => {
+        state.diario = { caimbra: document.getElementById('caimbra').checked, fome: document.getElementById('fome').checked, fadiga: document.getElementById('fadiga').checked, nota: document.getElementById('nota-dia').value };
+        await sync(); alert("Diário salvo!");
+    };
+
+    window.salvarItem = async () => {
+        const id = document.getElementById('edit-id').value;
+        const name = document.getElementById('name').value;
+        const dose = document.getElementById('dose').value;
+        const time = document.getElementById('time').value;
+        const stock = parseInt(document.getElementById('stock').value);
+        const dias = Array.from(document.querySelectorAll('#dias-semana input:checked')).map(i => i.value);
+        if(!name || !dose || !time || isNaN(stock) || dias.length === 0) return alert("Preencha tudo!");
+        if (id) {
+            const idx = state.supps.findIndex(s => s.id == id);
+            state.supps[idx] = { ...state.supps[idx], name, dose, time, stock, dias };
+        } else {
+            state.supps.push({ id: Date.now(), name, dose, time, stock, taken: false, dias });
+        }
+        document.getElementById('form-adicionar').style.display = 'none';
+        await sync();
+    };
+
+    window.editSupp = (id) => {
+        const s = state.supps.find(item => item.id == id);
+        document.getElementById('edit-id').value = s.id;
+        document.getElementById('name').value = s.name;
+        document.getElementById('dose').value = s.dose;
+        document.getElementById('time').value = s.time;
+        document.getElementById('stock').value = s.stock;
+        document.getElementById('form-title').innerText = "Editando";
+        document.getElementById('form-adicionar').style.display = 'block';
+    };
+
+    window.deleteSupp = async (id) => { state.supps = state.supps.filter(s => s.id !== id); await sync(); };
+
+    window.toggleSupp = async (id) => {
+        const s = state.supps.find(item => item.id == id);
+        const doseQtd = parseInt(s.dose) || 1;
+        s.taken = !s.taken;
+        s.taken ? s.stock -= doseQtd : s.stock += doseQtd;
+        if (!state.historico) state.historico = {};
+        const hoje = new Date().getDay().toString();
+        const listaHoje = state.supps.filter(i => i.dias.includes(hoje));
+        const tomados = listaHoje.filter(i => i.taken).length;
+        state.historico[new Date().toLocaleDateString()] = listaHoje.length > 0 ? (tomados / listaHoje.length) * 100 : 0;
+        render(); await sync();
+    };
+
+    function render() {
+        document.getElementById('titulo-data').innerText = new Date().toLocaleDateString();
+        const list = document.getElementById('supp-list'); list.innerHTML = '';
+        const diaSemana = new Date().getDay().toString();
+        const listaHoje = state.supps.filter(s => s.dias.includes(diaSemana));
+        const grupos = { manha: [], tarde: [], noite: [] };
+        listaHoje.forEach(s => {
+            const hora = parseInt(s.time.split(':')[0]);
+            if (hora < 12) grupos.manha.push(s); else if (hora < 18) grupos.tarde.push(s); else grupos.noite.push(s);
+        });
+
+        const mostrarGrupo = (lista, titulo) => {
+            if(lista.length === 0) return;
+            list.innerHTML += `<h3 style="color:#50c878; margin-top:20px">${titulo}</h3>`;
+            lista.forEach(s => {
+                list.innerHTML += `<div class="card"><div class="supp-item"><input type="checkbox" style="width:25px;height:25px" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${s.id})"> <div style="flex-grow:1; margin:0 10px"><strong>${s.name}</strong> (${s.dose})<br><small style="color:var(--accent)">⏰ ${s.time}</small><br><span class="${s.stock <= 10 ? 'stock-warn' : ''}">Estoque: ${s.stock}</span></div> <button class="btn-small" onclick="editSupp(${s.id})">Edit</button> <button class="btn-small" onclick="deleteSupp(${s.id})" style="background:#e57373">X</button></div></div>`;
+            });
+        };
+        mostrarGrupo(grupos.manha, "🌅 Manhã"); mostrarGrupo(grupos.tarde, "☀️ Tarde"); mostrarGrupo(grupos.noite, "🌙 Noite");
+        const tomados = listaHoje.filter(i => i.taken).length;
+        const progresso = listaHoje.length > 0 ? (tomados / listaHoje.length) * 100 : 0;
+        document.getElementById('progress-fill').style.width = progresso + '%';
+        document.getElementById('progress-text').innerText = `${Math.round(progresso)}% concluído hoje`;
+        if(document.getElementById('calendario-section').style.display === 'block') renderCalendar();
+    }
 </script>
 </body>
 </html>
