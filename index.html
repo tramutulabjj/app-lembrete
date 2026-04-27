@@ -6,20 +6,27 @@
     <title>HealthTrack - Pro</title>
     <style>
         :root { --bg: #121212; --card-bg: #1e1e1e; --accent: #50c878; --text: #ffffff; --danger: #e57373; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
         .container { max-width: 500px; margin: 0 auto; }
         h1 { color: var(--accent); text-align: center; }
         .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .supp-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-        .btn { background: var(--accent); border: none; padding: 10px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
-        .btn-small { background: #444; color: white; padding: 5px 8px; border-radius: 5px; font-size: 0.75em; border: none; cursor: pointer; }
+        .btn { background: var(--accent); border: none; padding: 12px; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn-small { background: #444; color: white; padding: 6px 10px; border-radius: 5px; font-size: 0.8em; border: none; cursor: pointer; }
         input { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box; }
         .stock-warn { color: var(--danger); font-weight: bold; font-size: 0.8em; }
+        
         #app-content, #calendario-section, #form-adicionar { display: none; }
+        
+        /* Calendário */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
         .day-box { padding: 8px; background: #333; text-align: center; border-radius: 5px; font-size: 0.8em; }
         .day-done { background: var(--accent); color: black; font-weight: bold; }
-        .days-checkboxes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 10px 0; font-size: 0.8em; }
+        
+        /* Checkboxes Dias da Semana (Arrumado) */
+        .days-checkboxes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+        .days-checkboxes label { display: flex; align-items: center; gap: 5px; background: #2a2a2a; padding: 8px; border-radius: 6px; font-size: 0.85em; cursor: pointer; border: 1px solid #444;}
+        .days-checkboxes input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
     </style>
 </head>
 <body>
@@ -27,54 +34,75 @@
 <div class="container">
     <h1 id="titulo-data">HealthTrack</h1>
     
-    <div id="login-section" class="card"><button class="btn" id="login-btn">Entrar com Google</button></div>
+    <!-- Tela de Login -->
+    <div id="login-section" class="card">
+        <h3 style="text-align: center; margin-top: 0;">Bem-vindo</h3>
+        <button class="btn" id="login-btn">Entrar com Google</button>
+    </div>
 
+    <!-- Conteúdo do App -->
     <div id="app-content">
-        <button class="btn-small" onclick="fazerLogout()" style="background:#444">Sair da Conta</button>
+        <button class="btn-small" onclick="fazerLogout()" style="background:#e57373; width: 100%; margin-bottom: 15px; font-weight: bold;">Sair da Conta</button>
         
         <div class="card">
-            <h3>Progresso Diário</h3>
-            <div style="height: 10px; background: #333; border-radius: 5px; overflow: hidden;">
+            <h3 style="margin-top: 0;">Progresso Diário</h3>
+            <div style="height: 12px; background: #333; border-radius: 6px; overflow: hidden;">
                 <div id="progress-fill" style="height:100%; background:var(--accent); width:0%; transition:0.3s;"></div>
             </div>
-            <p id="progress-text" style="text-align:center; margin-top:5px; font-size:0.9em;"></p>
-            <button class="btn" onclick="toggleCalendario()">Ver Calendário Mensal</button>
+            <p id="progress-text" style="text-align:center; margin-top:8px; font-size:0.9em;"></p>
+            <button class="btn" style="background:#444; color:white" onclick="toggleCalendario()">Ver Calendário Mensal</button>
         </div>
 
         <div id="calendario-section" class="card">
             <div style="display:flex; justify-content:space-between; align-items:center">
                 <button class="btn-small" onclick="mudarMes(-1)">Anterior</button>
-                <h4 id="mes-titulo"></h4>
+                <h4 id="mes-titulo" style="margin: 0;"></h4>
                 <button class="btn-small" onclick="mudarMes(1)">Próximo</button>
             </div>
             <div id="calendar-grid" class="calendar-grid"></div>
         </div>
 
-        <button class="btn" style="background:#555; color:white;" onclick="toggleForm()">+ Adicionar novo item</button>
+        <!-- Botão Adicionar Item -->
+        <button class="btn" style="background:#555; color:white; margin-bottom: 15px;" onclick="toggleForm()">+ Adicionar novo item</button>
+        
+        <!-- Formulário Adicionar Item -->
         <div id="form-adicionar" class="card">
-            <h3 id="form-title">Adicionar Item</h3>
+            <h3 id="form-title" style="margin-top: 0;">Adicionar Item</h3>
             <input type="hidden" id="edit-id">
-            <input type="text" id="name" placeholder="Nome">
+            <input type="text" id="name" placeholder="Nome do suplemento">
             <input type="text" id="dose" placeholder="Dosagem (ex: 2 cp)">
             <input type="time" id="time">
-            <input type="number" id="stock" placeholder="Estoque Inicial">
+            <input type="number" id="stock" placeholder="Estoque Inicial (Qtd)">
+            
+            <p style="font-size: 0.9em; margin-bottom: 0;">Dias da semana:</p>
             <div class="days-checkboxes" id="dias-semana">
-                <label><input type="checkbox" value="0">Dom</label> <label><input type="checkbox" value="1">Seg</label>
-                <label><input type="checkbox" value="2">Ter</label> <label><input type="checkbox" value="3">Qua</label>
-                <label><input type="checkbox" value="4">Qui</label> <label><input type="checkbox" value="5">Sex</label>
+                <label><input type="checkbox" value="0">Dom</label>
+                <label><input type="checkbox" value="1">Seg</label>
+                <label><input type="checkbox" value="2">Ter</label>
+                <label><input type="checkbox" value="3">Qua</label>
+                <label><input type="checkbox" value="4">Qui</label>
+                <label><input type="checkbox" value="5">Sex</label>
                 <label><input type="checkbox" value="6">Sáb</label>
             </div>
             <button class="btn" onclick="salvarItem()">Salvar Item</button>
         </div>
 
+        <!-- Lista de Suplementos -->
         <div id="supp-list"></div>
 
+        <!-- Diário de Performance -->
         <div class="card">
-            <h3>Diário de Performance</h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="caimbra" style="width: 20px; height: 20px;"> Cãibra?</label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fome" style="width: 20px; height: 20px;"> Vontade de Comer?</label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fadiga" style="width: 20px; height: 20px;"> Sentiu Fadiga?</label>
+            <h3 style="margin-top: 0;">Diário de Performance</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="caimbra" style="width: 22px; height: 22px; accent-color: var(--accent);"> Cãibra na Madrugada?
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="fome" style="width: 22px; height: 22px; accent-color: var(--accent);"> Vontade de Comer?
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="fadiga" style="width: 22px; height: 22px; accent-color: var(--accent);"> Sentiu Fadiga no Treino?
+                </label>
             </div>
             <input type="text" id="nota-dia" placeholder="Nota do dia..." style="margin-top: 15px;">
             <button class="btn" onclick="salvarDiario()">Salvar Diário</button>
@@ -87,6 +115,7 @@
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // Configuração do Firebase
     const firebaseConfig = { apiKey: "AIzaSyBOy2mwBKNkI7wgl2oWiKa1tgxU188IaoI", authDomain: "app-lembrete1.firebaseapp.com", projectId: "app-lembrete1", storageBucket: "app-lembrete1.firebasestorage.app", messagingSenderId: "811778254789", appId: "1:811778254789:web:c7770b298b49cb82400dac" };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -94,35 +123,95 @@
     const provider = new GoogleAuthProvider();
 
     let currentUser = null;
-    let state = { supps: [], diario: {}, historico: {}, dataUltimoAcesso: "" };
+    let state = { supps:[], diario: {}, historico: {}, dataUltimoAcesso: "" };
     let mesAtual = new Date();
 
+    // Login e Logout (Corrigido)
     document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-    window.fazerLogout = async () => { await signOut(auth); location.reload(); };
-    window.toggleForm = () => document.getElementById('form-adicionar').style.display = document.getElementById('form-adicionar').style.display === 'block' ? 'none' : 'block';
+    
+    window.fazerLogout = async () => { 
+        try {
+            await signOut(auth); 
+            location.reload(); // Recarrega a página para limpar
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao sair da conta.");
+        }
+    };
 
+    window.toggleForm = () => {
+        const f = document.getElementById('form-adicionar');
+        f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    };
+
+    // Monitora se o usuário está logado
     onAuthStateChanged(auth, (user) => {
-        if (user) { currentUser = user; document.getElementById('login-section').style.display = 'none'; document.getElementById('app-content').style.display = 'block'; carregarDados(); }
+        if (user) { 
+            currentUser = user; 
+            document.getElementById('login-section').style.display = 'none'; 
+            document.getElementById('app-content').style.display = 'block'; 
+            carregarDados(); 
+        } else {
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('app-content').style.display = 'none';
+        }
     });
 
+    // Carregar Dados e Corrigir Erros Antigos
     async function carregarDados() {
-        const docSnap = await getDoc(doc(db, "users", currentUser.uid));
-        if(docSnap.exists()) {
-            state = docSnap.data();
-            const hoje = new Date().toLocaleDateString();
-            if (state.dataUltimoAcesso !== hoje) {
-                state.supps.forEach(s => s.taken = false);
-                state.diario = { caimbra: false, fome: false, fadiga: false, nota: "" };
-                state.dataUltimoAcesso = hoje;
-                await sync();
+        try {
+            const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+            if(docSnap.exists()) {
+                const data = docSnap.data();
+                
+                // VACINA CONTRA ERROS: Arruma os remédios antigos que não tem "dias"
+                state.supps = (data.supps ||[]).map(s => {
+                    return {
+                        ...s,
+                        dias: s.dias || ['0','1','2','3','4','5','6'] // Se não tiver dia, marca todos
+                    };
+                });
+                
+                state.diario = data.diario || {};
+                state.historico = data.historico || {};
+                state.dataUltimoAcesso = data.dataUltimoAcesso || "";
+
+                // Reset automático na virada do dia
+                const hoje = new Date().toLocaleDateString();
+                if (state.dataUltimoAcesso !== hoje) {
+                    state.supps.forEach(s => s.taken = false);
+                    state.diario = { caimbra: false, fome: false, fadiga: false, nota: "" };
+                    state.dataUltimoAcesso = hoje;
+                    await sync(); // Salva o reset
+                }
+                
+                // Preenche o formulário do diário
+                document.getElementById('caimbra').checked = state.diario.caimbra || false;
+                document.getElementById('fome').checked = state.diario.fome || false;
+                document.getElementById('fadiga').checked = state.diario.fadiga || false;
+                document.getElementById('nota-dia').value = state.diario.nota || "";
+
+                render();
+            } else {
+                render(); // Se não tiver nada, renderiza vazio
             }
-            render();
+        } catch (e) {
+            console.error("Erro ao carregar os dados", e);
         }
     }
 
-    async function sync() { await setDoc(doc(db, "users", currentUser.uid), state); render(); }
+    async function sync() { 
+        await setDoc(doc(db, "users", currentUser.uid), state); 
+        render(); 
+    }
 
-    window.toggleCalendario = () => { const sec = document.getElementById('calendario-section'); sec.style.display = sec.style.display === 'block' ? 'none' : 'block'; if(sec.style.display === 'block') renderCalendar(); };
+    // Calendário
+    window.toggleCalendario = () => {
+        const sec = document.getElementById('calendario-section');
+        sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
+        if(sec.style.display === 'block') renderCalendar();
+    };
+
     window.mudarMes = (delta) => { mesAtual.setMonth(mesAtual.getMonth() + delta); renderCalendar(); };
 
     function renderCalendar() {
@@ -137,10 +226,17 @@
     }
 
     window.salvarDiario = async () => {
-        state.diario = { caimbra: document.getElementById('caimbra').checked, fome: document.getElementById('fome').checked, fadiga: document.getElementById('fadiga').checked, nota: document.getElementById('nota-dia').value };
-        await sync(); alert("Diário salvo!");
+        state.diario = { 
+            caimbra: document.getElementById('caimbra').checked, 
+            fome: document.getElementById('fome').checked, 
+            fadiga: document.getElementById('fadiga').checked, 
+            nota: document.getElementById('nota-dia').value 
+        };
+        await sync(); 
+        alert("Diário salvo!");
     };
 
+    // Salvar Item
     window.salvarItem = async () => {
         const id = document.getElementById('edit-id').value;
         const name = document.getElementById('name').value;
@@ -148,17 +244,30 @@
         const time = document.getElementById('time').value;
         const stock = parseInt(document.getElementById('stock').value);
         const dias = Array.from(document.querySelectorAll('#dias-semana input:checked')).map(i => i.value);
-        if(!name || !dose || !time || isNaN(stock) || dias.length === 0) return alert("Preencha tudo!");
+        
+        if(!name || !dose || !time || isNaN(stock) || dias.length === 0) return alert("Preencha todos os campos e escolha os dias!");
+        
         if (id) {
             const idx = state.supps.findIndex(s => s.id == id);
             state.supps[idx] = { ...state.supps[idx], name, dose, time, stock, dias };
         } else {
             state.supps.push({ id: Date.now(), name, dose, time, stock, taken: false, dias });
         }
-        document.getElementById('form-adicionar').style.display = 'none';
+        
+        // Limpar form
+        document.getElementById('edit-id').value = '';
+        document.getElementById('name').value = '';
+        document.getElementById('dose').value = '';
+        document.getElementById('time').value = '';
+        document.getElementById('stock').value = '';
+        document.querySelectorAll('#dias-semana input').forEach(i => i.checked = false);
+        document.getElementById('form-title').innerText = "Adicionar Item";
+        document.getElementById('form-adicionar').style.display = 'none'; // Esconde form
+        
         await sync();
     };
 
+    // Editar
     window.editSupp = (id) => {
         const s = state.supps.find(item => item.id == id);
         document.getElementById('edit-id').value = s.id;
@@ -166,48 +275,101 @@
         document.getElementById('dose').value = s.dose;
         document.getElementById('time').value = s.time;
         document.getElementById('stock').value = s.stock;
+        
+        // Marca os dias certos
         document.querySelectorAll('#dias-semana input').forEach(i => i.checked = s.dias.includes(i.value));
-        document.getElementById('form-title').innerText = "Editando";
-        document.getElementById('form-adicionar').style.display = 'block';
+        
+        document.getElementById('form-title').innerText = "Editando Item";
+        document.getElementById('form-adicionar').style.display = 'block'; // Abre form
     };
 
-    window.deleteSupp = async (id) => { state.supps = state.supps.filter(s => s.id !== id); await sync(); };
+    // Deletar
+    window.deleteSupp = async (id) => { 
+        if(confirm("Tem certeza que deseja apagar?")) {
+            state.supps = state.supps.filter(s => s.id !== id); 
+            await sync(); 
+        }
+    };
 
+    // Clicar no checkbox
     window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
-        const doseQtd = parseInt(s.dose) || 1; 
+        const doseQtd = parseInt(s.dose) || 1; // Pega só o número da dosagem
+        
         s.taken = !s.taken;
         s.taken ? s.stock -= doseQtd : s.stock += doseQtd;
+        
         if (!state.historico) state.historico = {};
+        
         const hojeDia = new Date().getDay().toString();
         const listaHoje = state.supps.filter(i => i.dias.includes(hojeDia));
         const tomados = listaHoje.filter(i => i.taken).length;
+        
         state.historico[new Date().toLocaleDateString()] = listaHoje.length > 0 ? (tomados / listaHoje.length) * 100 : 0;
-        render(); await sync();
+        
+        render(); 
+        await sync();
     };
 
+    // Renderizar
     function render() {
-        document.getElementById('titulo-data').innerText = new Date().toLocaleDateString();
-        const list = document.getElementById('supp-list'); list.innerHTML = '';
+        document.getElementById('titulo-data').innerText = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        
+        const list = document.getElementById('supp-list'); 
+        list.innerHTML = '';
+        
         const diaSemana = new Date().getDay().toString();
+        
+        // Pega APENAS os suplementos marcados para O DIA DE HOJE
         const listaHoje = state.supps.filter(s => s.dias.includes(diaSemana));
-        const grupos = { manha: [], tarde: [], noite: [] };
+        
+        const grupos = { manha: [], tarde:[], noite: [] };
+        
         listaHoje.forEach(s => {
             const hora = parseInt(s.time.split(':')[0]);
-            if (hora < 12) grupos.manha.push(s); else if (hora < 18) grupos.tarde.push(s); else grupos.noite.push(s);
+            if (hora < 12) grupos.manha.push(s); 
+            else if (hora < 18) grupos.tarde.push(s); 
+            else grupos.noite.push(s);
         });
+
         const mostrarGrupo = (lista, titulo) => {
             if(lista.length === 0) return;
-            list.innerHTML += `<h3 style="color:#50c878; margin-top:20px">${titulo}</h3>`;
+            list.innerHTML += `<h3 style="color:#50c878; margin-top:20px; border-bottom: 1px solid #333; padding-bottom: 5px;">${titulo}</h3>`;
             lista.forEach(s => {
-                list.innerHTML += `<div class="card"><div class="supp-item"><input type="checkbox" style="width:25px;height:25px" ${s.taken ? 'checked' : ''} onchange="toggleSupp(${s.id})"> <div style="flex-grow:1; margin:0 10px"><strong>${s.name}</strong> (${s.dose})<br><small style="color:var(--accent)">⏰ ${s.time}</small><br><span class="${s.stock <= 10 ? 'stock-warn' : ''}">Estoque: ${s.stock}</span></div> <button class="btn-small" onclick="editSupp(${s.id})">Edit</button> <button class="btn-small" onclick="deleteSupp(${s.id})" style="background:#e57373">X</button></div></div>`;
+                const checked = s.taken ? 'checked' : '';
+                const stockWarn = s.stock <= 10 ? 'stock-warn' : '';
+                list.innerHTML += `
+                <div class="card">
+                    <div class="supp-item">
+                        <input type="checkbox" style="width:25px;height:25px; accent-color: var(--accent);" ${checked} onchange="toggleSupp(${s.id})"> 
+                        <div style="flex-grow:1; margin:0 15px">
+                            <strong style="font-size:1.1em">${s.name}</strong> (${s.dose})<br>
+                            <small style="color:var(--accent); font-weight: bold;">⏰ ${s.time}</small><br>
+                            <small class="${stockWarn}">Estoque: ${s.stock}</small>
+                        </div> 
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                            <button class="btn-small" style="background:#555" onclick="editSupp(${s.id})">Edit</button> 
+                            <button class="btn-small" style="background:var(--danger)" onclick="deleteSupp(${s.id})">X</button>
+                        </div>
+                    </div>
+                </div>`;
             });
         };
-        mostrarGrupo(grupos.manha, "🌅 Manhã"); mostrarGrupo(grupos.tarde, "☀️ Tarde"); mostrarGrupo(grupos.noite, "🌙 Noite");
+
+        mostrarGrupo(grupos.manha, "🌅 Manhã"); 
+        mostrarGrupo(grupos.tarde, "☀️ Tarde"); 
+        mostrarGrupo(grupos.noite, "🌙 Noite");
+
+        if (listaHoje.length === 0) {
+            list.innerHTML = `<div class="card"><p style="text-align:center; color:#aaa;">Nenhum suplemento agendado para hoje.</p></div>`;
+        }
+
         const tomados = listaHoje.filter(i => i.taken).length;
         const progresso = listaHoje.length > 0 ? (tomados / listaHoje.length) * 100 : 0;
+        
         document.getElementById('progress-fill').style.width = progresso + '%';
         document.getElementById('progress-text').innerText = `${Math.round(progresso)}% concluído hoje`;
+        
         if(document.getElementById('calendario-section').style.display === 'block') renderCalendar();
     }
 </script>
