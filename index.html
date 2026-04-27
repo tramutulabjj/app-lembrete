@@ -19,16 +19,14 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
         .day-box { padding: 8px; background: #333; text-align: center; border-radius: 5px; font-size: 0.8em; }
         .day-done { background: var(--accent); color: black; font-weight: bold; }
+        .days-checkboxes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 10px 0; font-size: 0.8em; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1 id="titulo-data">HealthTrack</h1>
-    
-    <div id="login-section" class="card">
-        <button class="btn" id="login-btn">Entrar com Google</button>
-    </div>
+    <div id="login-section" class="card"><button class="btn" id="login-btn">Entrar com Google</button></div>
 
     <div id="app-content">
         <button class="btn-small" onclick="logout()" style="background:#444">Sair da Conta</button>
@@ -58,6 +56,15 @@
             <input type="text" id="dose" placeholder="Dosagem (ex: 2 cp)">
             <input type="time" id="time">
             <input type="number" id="stock" placeholder="Estoque Inicial">
+            <div class="days-checkboxes" id="dias-semana">
+                <label><input type="checkbox" value="0">Dom</label>
+                <label><input type="checkbox" value="1">Seg</label>
+                <label><input type="checkbox" value="2">Ter</label>
+                <label><input type="checkbox" value="3">Qua</label>
+                <label><input type="checkbox" value="4">Qui</label>
+                <label><input type="checkbox" value="5">Sex</label>
+                <label><input type="checkbox" value="6">Sáb</label>
+            </div>
             <button class="btn" onclick="salvarItem()">Salvar Item</button>
         </div>
 
@@ -66,9 +73,9 @@
         <div class="card">
             <h3>Diário de Performance</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="caimbra" style="width: 20px; height: 20px;"> Cãibra na Madrugada?</label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="caimbra" style="width: 20px; height: 20px;"> Cãibra?</label>
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fome" style="width: 20px; height: 20px;"> Vontade de Comer?</label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fadiga" style="width: 20px; height: 20px;"> Sentiu Fadiga no Treino?</label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" id="fadiga" style="width: 20px; height: 20px;"> Sentiu Fadiga?</label>
             </div>
             <input type="text" id="nota-dia" placeholder="Nota do dia..." style="margin-top: 15px;">
             <button class="btn" onclick="salvarDiario()">Salvar Diário</button>
@@ -102,8 +109,6 @@
         const docSnap = await getDoc(doc(db, "users", currentUser.uid));
         if(docSnap.exists()) {
             state = docSnap.data();
-            
-            // Lógica de Reset Automático
             const hoje = new Date().toLocaleDateString();
             if (state.dataUltimoAcesso !== hoje) {
                 state.supps.forEach(s => s.taken = false);
@@ -117,43 +122,25 @@
 
     async function sync() { await setDoc(doc(db, "users", currentUser.uid), state); render(); }
 
-    window.toggleCalendario = () => {
-        const sec = document.getElementById('calendario-section');
-        sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
-        if(sec.style.display === 'block') renderCalendar();
-    };
-
-    window.mudarMes = (delta) => { mesAtual.setMonth(mesAtual.getMonth() + delta); renderCalendar(); };
-
-    function renderCalendar() {
-        const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
-        document.getElementById('mes-titulo').innerText = mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-        const dias = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate();
-        for(let i=1; i<=dias; i++) {
-            const dataStr = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), i).toLocaleDateString();
-            const done = state.historico && state.historico[dataStr] === 100;
-            grid.innerHTML += `<div class="day-box ${done ? 'day-done' : ''}">${i}</div>`;
-        }
-    }
-
-    window.salvarDiario = async () => {
-        state.diario = { caimbra: document.getElementById('caimbra').checked, fome: document.getElementById('fome').checked, fadiga: document.getElementById('fadiga').checked, nota: document.getElementById('nota-dia').value };
-        await sync(); alert("Diário salvo!");
-    };
-
     window.salvarItem = async () => {
         const id = document.getElementById('edit-id').value;
         const name = document.getElementById('name').value;
         const dose = document.getElementById('dose').value;
         const time = document.getElementById('time').value;
         const stock = parseInt(document.getElementById('stock').value);
-        if(!name || !dose || !time || isNaN(stock)) return alert("Preencha tudo!");
+        const diasSelecionados = Array.from(document.querySelectorAll('#dias-semana input:checked')).map(i => i.value);
+
+        if(!name || !dose || !time || isNaN(stock) || diasSelecionados.length === 0) return alert("Preencha tudo e selecione os dias!");
+        
         if (id) {
             const index = state.supps.findIndex(s => s.id == id);
-            state.supps[index] = { ...state.supps[index], name, dose, time, stock };
+            state.supps[index] = { ...state.supps[index], name, dose, time, stock, dias: diasSelecionados };
         } else {
-            state.supps.push({ id: Date.now(), name, dose, time, stock, taken: false });
+            state.supps.push({ id: Date.now(), name, dose, time, stock, taken: false, dias: diasSelecionados });
         }
+        
+        // Limpa form
+        document.querySelectorAll('#dias-semana input').forEach(i => i.checked = false);
         document.getElementById('edit-id').value = '';
         document.getElementById('name').value = '';
         document.getElementById('dose').value = '';
@@ -163,36 +150,38 @@
         await sync();
     };
 
-    window.editSupp = (id) => {
-        const s = state.supps.find(item => item.id == id);
-        document.getElementById('edit-id').value = s.id;
-        document.getElementById('name').value = s.name;
-        document.getElementById('dose').value = s.dose;
-        document.getElementById('time').value = s.time;
-        document.getElementById('stock').value = s.stock;
-        document.getElementById('form-title').innerText = "Editando Item";
-    };
-
-    window.deleteSupp = async (id) => { state.supps = state.supps.filter(s => s.id !== id); await sync(); };
-
     window.toggleSupp = async (id) => {
         const s = state.supps.find(item => item.id == id);
         const doseQtd = parseInt(s.dose) || 1; 
         s.taken = !s.taken;
         s.taken ? s.stock -= doseQtd : s.stock += doseQtd;
-        if (!state.historico) state.historico = {};
-        const total = state.supps.length;
-        const tomados = state.supps.filter(i => i.taken).length;
-        state.historico[new Date().toLocaleDateString()] = total > 0 ? (tomados / total) * 100 : 0;
+        
+        // Filtra apenas os que são para hoje
+        const diaSemana = new Date().getDay().toString();
+        const listaHoje = state.supps.filter(i => i.dias.includes(diaSemana));
+        const tomadosHoje = listaHoje.filter(i => i.taken).length;
+        state.historico[new Date().toLocaleDateString()] = listaHoje.length > 0 ? (tomadosHoje / listaHoje.length) * 100 : 0;
+        
         render();
         await sync();
     };
 
+    // ... (Manter as funções toggleCalendario, mudarMes, renderCalendar, editSupp, deleteSupp, salvarDiario, logout)
+    window.toggleCalendario = () => { const sec = document.getElementById('calendario-section'); sec.style.display = sec.style.display === 'block' ? 'none' : 'block'; if(sec.style.display === 'block') renderCalendar(); };
+    window.mudarMes = (delta) => { mesAtual.setMonth(mesAtual.getMonth() + delta); renderCalendar(); };
+    function renderCalendar() { const grid = document.getElementById('calendar-grid'); grid.innerHTML = ''; document.getElementById('mes-titulo').innerText = mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); const dias = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate(); for(let i=1; i<=dias; i++) { const dataStr = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), i).toLocaleDateString(); const done = state.historico && state.historico[dataStr] === 100; grid.innerHTML += `<div class="day-box ${done ? 'day-done' : ''}">${i}</div>`; } }
+    window.salvarDiario = async () => { state.diario = { caimbra: document.getElementById('caimbra').checked, fome: document.getElementById('fome').checked, fadiga: document.getElementById('fadiga').checked, nota: document.getElementById('nota-dia').value }; await sync(); alert("Diário salvo!"); };
+    window.editSupp = (id) => { const s = state.supps.find(item => item.id == id); document.getElementById('edit-id').value = s.id; document.getElementById('name').value = s.name; document.getElementById('dose').value = s.dose; document.getElementById('time').value = s.time; document.getElementById('stock').value = s.stock; s.dias.forEach(d => document.querySelector(`#dias-semana input[value="${d}"]`).checked = true); document.getElementById('form-title').innerText = "Editando Item"; };
+    window.deleteSupp = async (id) => { state.supps = state.supps.filter(s => s.id !== id); await sync(); };
+
     function render() {
         document.getElementById('titulo-data').innerText = new Date().toLocaleDateString();
         const list = document.getElementById('supp-list'); list.innerHTML = '';
+        const diaSemana = new Date().getDay().toString();
+        const listaHoje = state.supps.filter(s => s.dias.includes(diaSemana));
+        
         const grupos = { manha: [], tarde: [], noite: [] };
-        state.supps.forEach(s => {
+        listaHoje.forEach(s => {
             const hora = parseInt(s.time.split(':')[0]);
             if (hora < 12) grupos.manha.push(s);
             else if (hora < 18) grupos.tarde.push(s);
@@ -209,10 +198,10 @@
 
         mostrarGrupo(grupos.manha, "🌅 Manhã");
         mostrarGrupo(grupos.tarde, "☀️ Tarde");
-        mostrarGrupo(grupos.noite, "🌙 Night");
+        mostrarGrupo(grupos.noite, "🌙 Noite");
 
-        const tomados = state.supps.filter(i => i.taken).length;
-        const progresso = state.supps.length > 0 ? (tomados / state.supps.length) * 100 : 0;
+        const tomados = listaHoje.filter(i => i.taken).length;
+        const progresso = listaHoje.length > 0 ? (tomados / listaHoje.length) * 100 : 0;
         document.getElementById('progress-fill').style.width = progresso + '%';
         document.getElementById('progress-text').innerText = `${Math.round(progresso)}% concluído hoje`;
         if(document.getElementById('calendario-section').style.display === 'block') renderCalendar();
